@@ -53,7 +53,7 @@ story_with_config(Config, UserSpecs, StoryFun) ->
 %% The side effect is the creation of XMPP users on a server.
 -spec create_users(config(), [user_res()]) -> config().
 create_users(Config, UserSpecs) ->
-    Suffix = fresh_suffix(),
+    Suffix = fresh_suffix(Config),
     FreshSpecs = freshen_specs(Config, UserSpecs, Suffix),
     FreshConfig = escalus_users:create_users(Config, FreshSpecs),
     %% The line below is not needed if we don't want to support cleaning
@@ -67,7 +67,7 @@ create_users(Config, UserSpecs) ->
 %% i.e. some stream features. It is side-effect free.
 -spec freshen_specs(config(), [user_res()]) -> [escalus_users:user_spec()].
 freshen_specs(Config, UserSpecs) ->
-    Suffix = fresh_suffix(),
+    Suffix = fresh_suffix(Config),
     lists:map(fun({UserName, Spec}) -> Spec end,
               freshen_specs(Config, UserSpecs, Suffix)).
 
@@ -78,6 +78,10 @@ freshen_spec(Config, {UserName, Res} = UserSpec) ->
 freshen_spec(Config, UserName) ->
     freshen_spec(Config, {UserName, 1}).
 
+fresh_suffix(Config) ->
+    CaseNameSuffix = case_name_suffix(Config),
+    IntSuffix = fresh_int_suffix(),
+    <<CaseNameSuffix/binary, IntSuffix/binary>>.
 
 -spec freshen_specs(config(), [user_res()], binary()) -> [escalus_users:named_user()].
 freshen_specs(Config, UserSpecs, Suffix) ->
@@ -144,10 +148,20 @@ select(UserResources, FullSpecs) ->
     lists:filter(fun({Name, _}) -> lists:member(Name, UserNames) end,
                  FullSpecs).
 
-fresh_suffix() ->
+fresh_int_suffix() ->
     {_, S, US} = erlang:now(),
     L = lists:flatten([integer_to_list(S rem 100), ".", integer_to_list(US)]),
     list_to_binary(L).
+
+case_name_suffix(Config) ->
+    CaseName = proplists:get_value(tc_name, Config, unnamed),
+    case CaseName of
+        unnamed ->
+            <<"_unnamed_">>;
+        Name when is_atom(Name) ->
+            N = atom_to_binary(Name, unicode),
+            <<"_",N/binary,"_">>
+    end.
 
 
 %%
