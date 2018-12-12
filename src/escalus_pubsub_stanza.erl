@@ -28,7 +28,7 @@
          get_subscription_options/3,
          get_node_subscriptions/3,
          set_subscriptions/4,
-
+         pubsub_iq/5,
          publish/3, publish/5,
          retract/4,
          get_all_items/3,
